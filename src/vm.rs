@@ -34,13 +34,14 @@ impl Vm {
     fn exec_opcode(&mut self) -> bool {
         let opcode = self.ram.read(self.pc);
         let arg = self.ram.read(self.pc + 1);
-        
+
         let res = match opcode {
             0xA0 | 0xA2 | 0xA9 => self.exec_ld_reg_imm(opcode, arg),
             0x84 | 0x85 | 0x86 => self.exec_st_reg_zp(opcode, arg),
             0xA4 | 0xA5 | 0xA6 => self.exec_ld_reg_zp(opcode, arg),
             0xB4 | 0xB5 => self.exec_ld_reg_zpx(opcode, arg),
             0xAC | 0xAD | 0xAE => self.exec_ld_reg_abs(opcode, arg),
+            0xBC | 0xBD => self.exec_ld_reg_abs_x(opcode, arg),
             _ => false,
         };
         return res;
@@ -50,7 +51,7 @@ impl Vm {
     // MOS6052 Assembly instructions:
     //
 
-    // LDY, LDX, LDA - imm
+    // LDY, LDX, LDA - immediate
     fn exec_ld_reg_imm(&mut self, opcode: u8, arg: u8) -> bool {
         match opcode {
             0xA0 => self.y = arg,
@@ -62,7 +63,7 @@ impl Vm {
         return true;
     }
 
-    // LDY, LDX, LDA - zp
+    // LDY, LDX, LDA - zero page
     fn exec_ld_reg_zp(&mut self, opcode: u8, arg: u8) -> bool {
         match opcode {
             0xA4 => self.y = self.ram.read(arg as u16),
@@ -74,7 +75,7 @@ impl Vm {
         return true;
     }
 
-    // LDY, LDA - zpx
+    // LDY, LDA - zero page index with X
     fn exec_ld_reg_zpx(&mut self, opcode: u8, arg: u8) -> bool {
         match opcode {
             0xB4 => self.y = self.ram.read((arg + self.x) as u16),
@@ -85,10 +86,10 @@ impl Vm {
         return true;
     }
 
-    // LDY, LDX, LDA - abs
+    // LDY, LDX, LDA - absolute
     fn exec_ld_reg_abs(&mut self, opcode: u8, arg: u8) -> bool {
         let arg2: u16 = self.ram.read(self.pc + 2) as u16;
-        let addr: u16 = (arg as u16) | (arg2 << 8);
+        let addr = (arg as u16) | (arg2 << 8);
         match opcode {
             0xAC => self.y = self.ram.read(addr),
             0xAE => self.x = self.ram.read(addr),
@@ -99,7 +100,18 @@ impl Vm {
         return true;
     }
 
-    // STY, STX, STA - zp
+    // LDY, LDA - absolute indexed with X
+    fn exec_ld_reg_abs_x(&mut self, opcode: u8, arg: u8) -> bool {
+        match opcode {
+            0xBC => self.y = self.ram.read((arg + self.x) as u16),
+            0xBD => self.a = self.ram.read((arg + self.x) as u16),
+            _ => return false,
+        }
+        self.pc += 2;
+        return true;
+    }
+
+    // STY, STX, STA - zero page
     fn exec_st_reg_zp(&mut self, opcode: u8, arg: u8) -> bool {
         match opcode {
             0x84 => self.ram.write(arg as u16, self.y),
