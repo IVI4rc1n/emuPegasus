@@ -34,7 +34,7 @@ impl Vm {
     fn exec_opcode(&mut self) -> bool {
         let opcode = self.ram.read(self.pc);
         let arg = self.ram.read(self.pc + 1);
-        
+
         let res = match opcode {
             0xA0 | 0xA2 | 0xA9 => self.exec_ld_reg_imm(opcode, arg),
             0x84 | 0x85 | 0x86 => self.exec_st_reg_zp(opcode, arg),
